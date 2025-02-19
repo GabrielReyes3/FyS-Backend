@@ -53,3 +53,7 @@ coverage/
 Thumbs.db
 *.bak
 *.orig
+
+config/
+serviceAccountKey.json
+
