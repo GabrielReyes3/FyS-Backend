@@ -68,8 +68,23 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Contraseña incorrecta" });
     }
 
-    // Generar token JWT
-    const token = jwt.sign({ email, role: userData.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // Obtener los permisos según el rol desde la colección "roles"
+    const roleRef = db.collection("roles").doc(userData.role); // Suponiendo que el role está en la colección roles
+    const roleSnap = await roleRef.get();
+
+    if (!roleSnap.exists) {
+      return res.status(404).json({ message: "Rol no encontrado" });
+    }
+
+    const roleData = roleSnap.data();
+    const permissions = roleData.permissions || []; // Asumimos que el documento de rol contiene un array de permisos
+
+    // Generar token JWT con los permisos
+    const token = jwt.sign(
+      { email, role: userData.role, permissions },  // Aquí se asignan los permisos obtenidos
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     // Actualizar el último login
     await userRef.update({ last_login: new Date() });
@@ -80,5 +95,6 @@ const login = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
 
 module.exports = { register, login };
